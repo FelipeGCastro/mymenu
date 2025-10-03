@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Menu em Vídeo – Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0F1115; --card:rgba(255,255,255,.04); --line:rgba(255,255,255,.10);
+  --text:#E8ECF1; --muted:#99A3B2; --accent:#35E1A6;
+}
+*{box-sizing:border-box} html,body{margin:0;height:100%}
+body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial;color:var(--text);background:var(--bg)}
+/* Header */
+.header{position:sticky;top:0;z-index:20;backdrop-filter:saturate(140%) blur(8px);
+  background:linear-gradient(180deg,rgba(15,17,21,.9),rgba(15,17,21,.6));
+  border-bottom:1px solid var(--line); padding:10px 14px; display:flex; align-items:center; justify-content:space-between}
+.brand{font-weight:800;letter-spacing:-.02em;display:flex;align-items:center;gap:10px}
+.brand-logo{width:36px;height:36px;border-radius:50%;object-fit:cover;border:2px solid var(--line)}
+.icon-btn{border:1px solid var(--line);background:transparent;color:var(--text);border-radius:12px;padding:6px 10px;cursor:pointer;transition:all .2s}
+.icon-btn:hover{background:var(--card);border-color:var(--accent)}
+.hidden{transform:translateY(-100%); transition:transform .25s ease}
+
+/* Categories */
+.categories{position:sticky;top:58px;z-index:19;backdrop-filter:saturate(140%) blur(8px);
+  background:linear-gradient(180deg,rgba(15,17,21,.85),rgba(15,17,21,.4));
+  border-bottom:1px solid var(--line);padding:12px 14px;overflow-x:auto;
+  scrollbar-width:none;-ms-overflow-style:none}
+.categories::-webkit-scrollbar{display:none}
+.categories-scroll{display:flex;gap:8px;min-width:min-content}
+.category-btn{padding:8px 16px;border-radius:20px;border:1px solid var(--line);
+  background:var(--card);color:var(--muted);font-size:14px;font-weight:600;
+  cursor:pointer;transition:all .2s;white-space:nowrap;flex-shrink:0}
+.category-btn:hover{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.2)}
+.category-btn.active{background:var(--accent);color:#0F1115;border-color:var(--accent)}
+.categories.hidden{transform:translateY(-100%);transition:transform .25s ease}
+
+/* Grid 2×2 */
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:12px;max-width:1200px;margin:0 auto}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden;cursor:pointer;transition:transform .2s,border-color .2s}
+.card:hover{transform:scale(1.02);border-color:var(--accent)}
+
+/* Media container com overlay de informações */
+.media{position:relative;aspect-ratio:9/16;background:#0a0c10;overflow:hidden}
+video{width:100%;height:100%;object-fit:cover;display:block}
+
+/* Botão play central estilizado */
+.playbadge{position:absolute;inset:0;display:grid;place-items:center;opacity:1;transition:opacity .3s;pointer-events:none}
+.playbadge svg{width:64px;height:64px;filter:drop-shadow(0 4px 12px rgba(0,0,0,.4))}
+.card:not(.paused) .playbadge{opacity:0}
+
+/* Overlay com título e preço na parte inferior do vídeo */
+.overlay-info{position:absolute;bottom:0;left:0;right:0;padding:12px 14px;
+  background:linear-gradient(to top, rgba(0,0,0,.75), rgba(0,0,0,.4), transparent);
+  display:flex;align-items:flex-end;justify-content:space-between;gap:10px;
+  pointer-events:none;opacity:0;transition:opacity .3s}
+.card:hover .overlay-info,.card.paused .overlay-info{opacity:1}
+.overlay-left{flex:1;overflow:hidden}
+.overlay-title{font-weight:600;font-size:14px;text-shadow:0 1px 4px rgba(0,0,0,.6);margin-bottom:2px}
+.overlay-desc{font-size:11px;color:var(--muted);text-shadow:0 1px 3px rgba(0,0,0,.6);line-height:1.3;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;text-overflow:ellipsis}
+.overlay-price{font-weight:800;font-size:15px;color:var(--accent);text-shadow:0 1px 4px rgba(0,0,0,.6);flex-shrink:0}
+
+/* Modal fullscreen estilo Reels */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:100;display:none;align-items:center;justify-content:center;padding:20px}
+.modal.active{display:flex;animation:fadeIn .25s ease}
+.modal-content{position:relative;max-width:500px;width:100%;aspect-ratio:9/16;border-radius:12px;overflow:hidden;
+  box-shadow:0 20px 60px rgba(0,0,0,.8)}
+.modal video{width:100%;height:100%;object-fit:cover}
+.modal-close{position:absolute;top:16px;right:16px;width:36px;height:36px;border-radius:50%;
+  background:rgba(255,255,255,.15);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.2);
+  color:white;font-size:20px;cursor:pointer;display:grid;place-items:center;z-index:10;transition:all .2s}
+.modal-close:hover{background:rgba(255,255,255,.25);transform:scale(1.1)}
+.modal-info{position:absolute;bottom:0;left:0;right:0;padding:20px;
+  background:linear-gradient(to top, rgba(0,0,0,.85), rgba(0,0,0,.5), transparent);z-index:5}
+.modal-title{font-weight:700;font-size:18px;margin-bottom:4px}
+.modal-price{font-weight:800;font-size:20px;color:var(--accent);margin-bottom:8px}
+.modal-desc{color:var(--muted);font-size:14px;line-height:1.4}
+
+/* Loading spinner */
+.modal-loading{position:absolute;inset:0;display:grid;place-items:center;background:rgba(0,0,0,.6);z-index:8;transition:opacity .3s}
+.modal-loading.hidden{opacity:0;pointer-events:none}
+.spinner{width:48px;height:48px;border:3px solid rgba(255,255,255,.2);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+@keyframes fadeIn{from{opacity:0} to{opacity:1}}
+
+@media (max-width:480px){
+  .grid{gap:8px;padding:8px}
+  .modal-content{max-width:100%;border-radius:0}
+}
+@media (prefers-reduced-motion: reduce){
+  .playbadge,.card,.modal{transition:none;animation:none}
+}
+</style>
+</head>
+<body>
+<header class="header" id="hdr">
+  <div class="brand">
+    <img src="/bigpastel.jpg" alt="Big Pastel" class="brand-logo">
+    <span>Big Pastel</span>
+  </div>
+  <button class="icon-btn" aria-label="Partilhar QR">QR</button>
+</header>
+
+<nav class="categories" id="categories">
+  <div class="categories-scroll">
+    <button class="category-btn active">Pratos Principais</button>
+    <button class="category-btn">Pastéis</button>
+    <button class="category-btn">Bebidas</button>
+    <button class="category-btn">Sobremesas</button>
+    <button class="category-btn">Entradas</button>
+    <button class="category-btn">Vegetariano</button>
+  </div>
+</nav>
+
+<main class="grid" id="grid">
+  <!-- Item 1 -->
+  <article class="card paused" data-title="Bife na Manteiga" data-price="€24" data-desc="Corte alto selado ao ponto, finalizado com manteiga de alho e ervas.">
+    <div class="media" data-video>
+      <video playsinline muted loop preload="metadata">
+        <source src="https://littlepilgrimstorage.blob.core.windows.net/videos/steak.mp4" type="video/mp4">
+      </video>
+      <div class="playbadge">
+        <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="50" cy="50" r="48" fill="rgba(255,255,255,0.25)" stroke="rgba(255,255,255,0.4)" stroke-width="2"/>
+          <path d="M40 30 L70 50 L40 70 Z" fill="white"/>
+        </svg>
+      </div>
+      <div class="overlay-info">
+        <div class="overlay-title">Bife na Manteiga</div>
+        <div class="overlay-price">€24</div>
+      </div>
+    </div>
+  </article>
+
+  <!-- Item 2 -->
+  <article class="card paused" data-title="Spaghetti alla Carbonara" data-price="€16" data-desc="Guanciale crocante, gemas e pecorino romano.">
+    <div class="media" data-video>
+      <video playsinline muted loop preload="metadata">
+        <source src="https://littlepilgrimstorage.blob.core.windows.net/videos/spaghetti.mp4" type="video/mp4">
+      </video>
+      <div class="playbadge">
+        <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="50" cy="50" r="48" fill="rgba(255,255,255,0.25)" stroke="rgba(255,255,255,0.4)" stroke-width="2"/>
+          <path d="M40 30 L70 50 L40 70 Z" fill="white"/>
+        </svg>
+      </div>
+      <div class="overlay-info">
+        <div class="overlay-title">Spaghetti Carbonara</div>
+        <div class="overlay-price">€16</div>
+      </div>
+    </div>
+  </article>
+
+  <!-- Item 3 -->
+  <article class="card paused" data-title="Pizza Peperoni" data-price="€8" data-desc="Baunilha com crosta de açúcar caramelizado na hora.">
+    <div class="media" data-video>
+      <video playsinline muted loop preload="metadata">
+        <source src="https://littlepilgrimstorage.blob.core.windows.net/videos/pizza.mp4" type="video/mp4">
+      </video>
+      <div class="playbadge">
+        <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="50" cy="50" r="48" fill="rgba(255,255,255,0.25)" stroke="rgba(255,255,255,0.4)" stroke-width="2"/>
+          <path d="M40 30 L70 50 L40 70 Z" fill="white"/>
+        </svg>
+      </div>
+      <div class="overlay-info">
+        <div class="overlay-title">Pizza Peperoni</div>
+        <div class="overlay-price">€8</div>
+      </div>
+    </div>
+  </article>
+
+  <!-- Item 4 -->
+  <article class="card paused" data-title="Tártaro de Salmão" data-price="€14" data-desc="Cítrico leve, cebolete e crocante de pão.">
+    <div class="media" data-video>
+      <video playsinline muted loop preload="metadata">
+        <source src="https://littlepilgrimstorage.blob.core.windows.net/videos/salmao.mp4" type="video/mp4">
+      </video>
+      <div class="playbadge">
+        <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="50" cy="50" r="48" fill="rgba(255,255,255,0.25)" stroke="rgba(255,255,255,0.4)" stroke-width="2"/>
+          <path d="M40 30 L70 50 L40 70 Z" fill="white"/>
+        </svg>
+      </div>
+      <div class="overlay-info">
+        <div class="overlay-title">Tártaro de Salmão</div>
+        <div class="overlay-price">€14</div>
+      </div>
+    </div>
+  </article>
+</main>
+
+<!-- Modal fullscreen -->
+<div class="modal" id="modal">
+  <div class="modal-content">
+    <video playsinline muted loop id="modal-video"></video>
+    <div class="modal-loading" id="modal-loading">
+      <div class="spinner"></div>
+    </div>
+    <button class="modal-close" id="modal-close">✕</button>
+    <div class="modal-info">
+      <div class="modal-title" id="modal-title"></div>
+      <div class="modal-price" id="modal-price"></div>
+      <div class="modal-desc" id="modal-desc"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Vídeos começam pausados
+const modal = document.getElementById('modal');
+const modalVideo = document.getElementById('modal-video');
+const modalClose = document.getElementById('modal-close');
+const modalTitle = document.getElementById('modal-title');
+const modalPrice = document.getElementById('modal-price');
+const modalDesc = document.getElementById('modal-desc');
+const modalLoading = document.getElementById('modal-loading');
+
+// Clique no card abre o modal fullscreen
+document.querySelectorAll('.card').forEach(card => {
+  card.addEventListener('click', () => {
+    const video = card.querySelector('video');
+    const title = card.dataset.title;
+    const price = card.dataset.price;
+    const desc = card.dataset.desc;
+
+    // Copia a source do vídeo para o modal
+    const source = video.querySelector('source').src;
+    modalVideo.innerHTML = `<source src="${source}" type="video/mp4">`;
+
+    // Mostra loading
+    modalLoading.classList.remove('hidden');
+
+    // Preenche informações
+    modalTitle.textContent = title;
+    modalPrice.textContent = price;
+    modalDesc.textContent = desc;
+
+    // Abre modal
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+
+    // Carrega e toca vídeo
+    modalVideo.load();
+
+    // Esconde loading quando estiver pronto
+    modalVideo.addEventListener('canplay', () => {
+      modalLoading.classList.add('hidden');
+      modalVideo.play();
+    }, { once: true });
+
+    // Fallback: esconde loading após 3s mesmo se não carregar
+    setTimeout(() => {
+      modalLoading.classList.add('hidden');
+    }, 3000);
+  });
+});
+
+// Fechar modal
+function closeModal() {
+  modal.classList.remove('active');
+  modalVideo.pause();
+  modalVideo.currentTime = 0;
+  modalLoading.classList.remove('hidden');
+  document.body.style.overflow = '';
+}
+
+modalClose.addEventListener('click', (e) => {
+  e.stopPropagation();
+  closeModal();
+});
+
+// Fechar ao clicar fora do vídeo
+modal.addEventListener('click', (e) => {
+  if (e.target === modal) {
+    closeModal();
+  }
+});
+
+// Fechar com ESC
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && modal.classList.contains('active')) {
+    closeModal();
+  }
+});
+
+// Header e categorias escondem/mostram conforme scroll
+let lastY = 0;
+const hdr = document.getElementById('hdr');
+const categories = document.getElementById('categories');
+window.addEventListener('scroll', () => {
+  const y = window.scrollY;
+  if(y > lastY && y > 20){
+    hdr.classList.add('hidden');
+    categories.classList.add('hidden');
+  }
+  else{
+    hdr.classList.remove('hidden');
+    categories.classList.remove('hidden');
+  }
+  lastY = y;
+});
+
+// Categorias - apenas visual
+document.querySelectorAll('.category-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  });
+});
+</script>
+</body>
+</html>
